@@ -20,6 +20,7 @@ import TeamMemberCard from "@/components/TeamMemberCard";
 import {DraggableItem} from "@/components/panel/DraggableItem";
 import {ReferenceItem} from "@/components/chat/reference/ReferencedItems";
 import ChatInput from "@/components/chat/ChatInput";
+import MessageInput from "@/components/MessageInput";
 
 // 引用标签组件
 const QuoteTag = ({ quotes, onQuoteClick }: { quotes: number[]; onQuoteClick: (index: number) => void }) => (
@@ -639,7 +640,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                     {/* 待办事项 */}
                                     <div className="space-y-4">
                                         <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-blue-500" />
+                                            <Clock className="w-4 h-4 text-blue-500"/>
                                             待办事项
                                         </h4>
                                         <div className="space-y-3">
@@ -669,7 +670,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                     {/* 催办状态 */}
                                     <div className="space-y-4">
                                         <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                            <MessageSquare className="w-4 h-4 text-yellow-500" />
+                                            <MessageSquare className="w-4 h-4 text-yellow-500"/>
                                             已催办未响应
                                         </h4>
                                         <div className="space-y-3">
@@ -698,13 +699,13 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                 {/* 右侧：已完成事项及结论 */}
                                 <div className="space-y-4">
                                     <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                        <CheckCircle className="w-4 h-4 text-green-500"/>
                                         已完成事项及结论
                                     </h4>
                                     <div className="space-y-4">
                                         <CompletedItemCard
                                             item={{
-                                                id:3,
+                                                id: 3,
                                                 title: "性能优化方案确认",
                                                 detail: "完成了项目性能瓶颈分析和优化方案的制定",
                                                 date: "2024-03-15",
@@ -718,7 +719,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                         />
                                         <CompletedItemCard
                                             item={{
-                                                id:4,
+                                                id: 4,
                                                 title: "架构设计方案确定",
                                                 detail: "完成系统整体架构设计评审",
                                                 date: "2024-03-14",
@@ -798,9 +799,31 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
             </div>
 
             {/* 底部输入区域 */}
-            <ChatInput onClose={onClose} onSendMessage={onSendMessage}/>
-        </div>
-    );
+            <div className="flex-none p-6">
+                <div className="max-w-4xl mx-auto">
+                    <div className="relative flex rounded-xl shadow-sm">
+                        <button
+                            onClick={onClose}
+                            className="flex-none px-4 py-3 rounded-l-xl flex items-center gap-2
+                    transition-all duration-200
+                    bg-gray-200 text-gray-800 shadow-inner"
+                        >
+                            <Layout className="w-4 h-4"/>
+                            <span className="text-sm font-medium">项目面板</span>
+                        </button>
+                        <div className="flex-1 relative">
+                            <MessageInput onSend={onSendMessage}/>
+                        </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-400 text-center">
+                        按 Enter 发送，Shift + Enter 换行
+                    </div>
+                </div>
+            </div>
+            {/*<ChatInput onClose={onClose} onSendMessage={onSendMessage}/>*/}
+</div>
+)
+    ;
 };
 
 export default ProjectPanel;

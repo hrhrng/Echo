@@ -16,6 +16,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -50,13 +51,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage }) => {
     };
 
     const handleSend = () => {
-        if (!message.trim() && !references.length) return;
+        const trimmedMessage = message.trim();
+        if (!trimmedMessage && !references.length) return;
 
-        onSendMessage({
-            message: message.trim(),
-            references
-        });
+        onSendMessage(trimmedMessage, references);  // 直接传递消息文本
         setMessage('');
+        clearReferences();
     };
 
     return (
