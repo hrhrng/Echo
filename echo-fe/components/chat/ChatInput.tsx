@@ -1,20 +1,41 @@
-import React, { useState, useRef } from 'react';
-import {Layout, MessagesSquare, Send} from 'lucide-react';
+import React, {useState, useRef, useLayoutEffect} from 'react';
+import {Layout, Lightbulb, MessagesSquare, Send} from 'lucide-react';
 import { ReferencedItems, type ReferenceItem } from './reference/ReferencedItems';
 import { useReference } from '@/contexts/ReferenceContext';
+import QuestionSuggestions from "@/components/chat/QuestionSuggestion";
 
 interface ChatInputProps {
     onClose: () => void;
     onSendMessage: (message: string) => void;
     isPanelOpen?: boolean;
+    onRendered: (height: number) => void;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage, isPanelOpen = false }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage, isPanelOpen = false , onRendered}) => {
     const [message, setMessage] = useState('');
     const { references, addReference, clearReferences } = useReference();
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const rootRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (rootRef.current && onRendered) {
+            // 获取实际高度
+            const boundingHeight = rootRef.current.getBoundingClientRect().height;
+            // 通知父组件已渲染完成，并传递高度
+            onRendered(boundingHeight);
+        }
+    }, [onRendered]); // 当onRendered变化时重新执行
+
+    const handleContentChange = () => {
+        if (rootRef.current && onRendered) {
+            const height = rootRef.current.getBoundingClientRect().height;
+            onRendered(height);
+        }
+    };
+
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -46,6 +67,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage, isPanelOp
         } catch (error) {
             console.error('Error processing drop:', error);
         }
+
+        handleContentChange();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -74,42 +97,21 @@ const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage, isPanelOp
         onSendMessage(question);
     };
 
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const handleQuestionSelect = (question) => {
+        setMessage(question);
+        setShowSuggestions(false);
+    };
+
+
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6" ref={rootRef}>
 
-            {references.length > 0 && (
                 <div className="mb-0">
-                    <ReferencedItems />
+                    <ReferencedItems onItemRemove={()=>handleContentChange()} onSuggestionSelect={handleQuestionSelect}/>
                 </div>
-            )}
 
-            {/* 推荐问题模块 */}
-            <div className="mb-3">
-                <div className="rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-gray-50/95 backdrop-blur-sm p-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                        <MessagesSquare className="w-4 h-4" />
-                        <span>推荐问题</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {suggestedQuestions.map((question, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleQuestionClick(question)}
-                                className="px-3 py-1.5
-                                bg-white hover:bg-blue-50
-                                rounded-lg shadow-sm
-                                border border-blue-100
-                                text-sm text-gray-700
-                                transition-all duration-200
-                                hover:border-blue-200 hover:scale-[1.02]
-                                active:scale-[0.98]"
-                            >
-                                {question}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
 
 
             <div

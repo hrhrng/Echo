@@ -615,6 +615,14 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
         }
     ];
 
+    const [chatInputHeight, setChatInputHeight] = useState(0);
+
+    // 处理ChatInput渲染完成的回调
+    const handleChatInputRender = (height) => {
+        console.log(height)
+        setChatInputHeight(height);
+    };
+
     return (
         <div className="h-screen flex flex-col bg-gray-50">
             {/* 顶部导航 */}
@@ -627,7 +635,10 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
             </div>
 
             {/* 主内容区域 */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto"
+                 style={{
+                     paddingBottom: chatInputHeight
+                 }}>
                 <div className="px-8 pt-3 pb-6">
                     <div className="max-w-6xl mx-auto space-y-8">
                         {/* 我的关注部分 */}
@@ -796,29 +807,8 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                 </div>
             </div>
 
-            {/* 底部输入区域 */}
-            {/*<div className="flex-none p-6">*/}
-            {/*    <div className="max-w-4xl mx-auto">*/}
-            {/*        <div className="relative flex rounded-xl shadow-sm">*/}
-            {/*            <button*/}
-            {/*                onClick={onClose}*/}
-            {/*                className="flex-none px-4 py-3 rounded-l-xl flex items-center gap-2*/}
-            {/*        transition-all duration-200*/}
-            {/*        bg-gray-200 text-gray-800 shadow-inner"*/}
-            {/*            >*/}
-            {/*                <Layout className="w-4 h-4"/>*/}
-            {/*                <span className="text-sm font-medium">项目面板</span>*/}
-            {/*            </button>*/}
-            {/*            <div className="flex-1 relative">*/}
-            {/*                <MessageInput onSend={onSendMessage}/>*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*        <div className="mt-2 text-xs text-gray-400 text-center">*/}
-            {/*            按 Enter 发送，Shift + Enter 换行*/}
-            {/*        </div>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
-            <ChatInput onClose={onClose} onSendMessage={onSendMessage} isPanelOpen={true}/>
+
+            <ChatInput onClose={onClose} onSendMessage={onSendMessage} isPanelOpen={true} onRendered={handleChatInputRender} />
 </div>
 )
     ;
