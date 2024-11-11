@@ -1,9 +1,8 @@
 import {useCallback, useRef, useState} from 'react';
 import Sidebar from './Sidebar';
 import ChatSidebar from './ChatSidebar';
-import CitationText from './CitationText';
-import ChatBox from "@/components/ChatBox";
 import ChatInterface from "@/components/ChatInterface";
+import {ReferenceProvider} from "@/contexts/ReferenceContext";
 
 const SplitPageLayout = () => {
     const chatContainerRef = useRef(null);
@@ -17,17 +16,12 @@ const SplitPageLayout = () => {
     const togglePin = () => setIsLeftPinned(!isLeftPinned);
     const toggleRightSidebar = () => setIsRightCollapsed(!isRightCollapsed);
 
+    const activeIndexRef = useRef(null);
+
     const handleQuotaClick = useCallback((index) => {
-        // 确保面板展开
-        if (isRightCollapsed) {
-            toggleRightSidebar();
-        }
+        console.log("scroll to index:" + index);
 
-        // 使用requestAnimationFrame确保DOM更新后再滚动
-        requestAnimationFrame(() => {
-
-            setActiveId(index);
-
+        const scrollToTarget = () => {
             if (!chatContainerRef.current) return;
 
             // 获取容器和目标元素
@@ -47,9 +41,32 @@ const SplitPageLayout = () => {
                 top: centerPosition,
                 behavior: 'smooth'
             });
-            // todo 高亮时间这里控制
-            setTimeout(() => activeId === index ? setActiveId(null):null, 5000);
-        });
+
+            // 设置高亮状态
+            activeIndexRef.current = index;
+            setActiveId(index);
+
+            setTimeout(() => {
+                if (activeIndexRef.current === index) {
+                    activeIndexRef.current = null;
+                    setActiveId(null);
+                }
+            }, 5000);
+        };
+
+        // 如果面板已经展开，直接执行滚动
+        if (!isRightCollapsed) {
+            requestAnimationFrame(scrollToTarget);
+            return;
+        }
+
+        // 如果面板未展开，先展开面板，等待过渡动画完成后再滚动
+        toggleRightSidebar();
+
+        setTimeout(() => {
+            requestAnimationFrame(scrollToTarget);
+        }, 300);
+
     }, [isRightCollapsed, toggleRightSidebar]);
 
     return (
@@ -69,7 +86,10 @@ const SplitPageLayout = () => {
                     isLeftPinned ? 'ml-64' : 'ml-0'
                 }`}
             >
+                <ReferenceProvider>
                     <ChatInterface onQuotaClick={handleQuotaClick}/>
+                </ReferenceProvider>
+
             </div>
 
 

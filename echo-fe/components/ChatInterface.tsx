@@ -221,6 +221,7 @@ const ChatInterface = ({
                     onSendMessage={handleSendMessage}
                     message={message}
                     setMessage={setMessage}
+                    onQuoteClick={onQuotaClick}
                 />
             </div>
         </div>
