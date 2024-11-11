@@ -1,45 +1,43 @@
-// ReferencedItems.tsx
 import React from 'react';
-import { Quote, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useReference } from '@/contexts/ReferenceContext';
 
 export interface ReferenceItem {
     id: string | number;
     type: 'todo' | 'completed' | 'focus';
     title: string;
-    // 添加其他可能需要的字段
-    sourceId?: string | number;  // 源对象的ID
-    createTime?: string;         // 创建时间，可用作备用key
+    sourceId?: string | number;
+    createTime?: string;
 }
 
-interface ReferencedItemsProps {
-}
+interface ReferencedItemsProps {}
 
-export const ReferencedItems: React.FC<ReferencedItemsProps> = ({
-                                                                }) => {
+export const ReferencedItems: React.FC<ReferencedItemsProps> = () => {
     const { references, removeReference } = useReference();
 
     if (!references?.length) return null;
 
     return (
-        <div className="p-3 bg-gray-50 border-t border-b border-gray-200">
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                <Quote className="w-4 h-4" />
-                <span>引用内容</span>
-            </div>
+        <div className="p-2">
             <div className="flex flex-wrap gap-2">
                 {references.map((item) => (
                     <div
                         key={item.id}
-                        className="group flex items-center gap-2 max-w-fit px-2 py-1 bg-white rounded-lg border border-gray-200
-                        text-sm text-gray-600"
+                        className="group flex items-center gap-2 px-3 py-1.5
+                            bg-white hover:bg-blue-50
+                            rounded-lg shadow-sm
+                            border border-blue-100
+                            text-sm text-gray-700
+                            transition-colors duration-200"
                     >
                         <span>{item.title}</span>
                         <button
                             onClick={() => removeReference(item.id)}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-100 rounded transition-opacity"
+                            className="opacity-0 group-hover:opacity-100 p-0.5
+                                hover:bg-blue-100/50 rounded
+                                transition-all duration-200"
                         >
-                            <X className="w-3 h-3" />
+                            <X className="w-3 h-3"/>
                         </button>
                     </div>
                 ))}
@@ -48,4 +46,4 @@ export const ReferencedItems: React.FC<ReferencedItemsProps> = ({
     );
 };
 
-export type { ReferencedItemsProps };
+export type {ReferencedItemsProps};

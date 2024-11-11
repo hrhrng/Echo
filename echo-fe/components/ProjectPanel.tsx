@@ -243,9 +243,7 @@ const ProjectTimeline = ({ items , onQuoteClick}) => (
                         <span className="text-gray-600">{item.action}</span>
                         <span className="text-green-600">{item.result}</span>
                     </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                         <QuoteTag quotes={item.quotes} onQuoteClick={onQuoteClick} />
-                    </div>
                 </div>
             ))}
         </div>
@@ -799,28 +797,28 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
             </div>
 
             {/* 底部输入区域 */}
-            <div className="flex-none p-6">
-                <div className="max-w-4xl mx-auto">
-                    <div className="relative flex rounded-xl shadow-sm">
-                        <button
-                            onClick={onClose}
-                            className="flex-none px-4 py-3 rounded-l-xl flex items-center gap-2
-                    transition-all duration-200
-                    bg-gray-200 text-gray-800 shadow-inner"
-                        >
-                            <Layout className="w-4 h-4"/>
-                            <span className="text-sm font-medium">项目面板</span>
-                        </button>
-                        <div className="flex-1 relative">
-                            <MessageInput onSend={onSendMessage}/>
-                        </div>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-400 text-center">
-                        按 Enter 发送，Shift + Enter 换行
-                    </div>
-                </div>
-            </div>
-            {/*<ChatInput onClose={onClose} onSendMessage={onSendMessage}/>*/}
+            {/*<div className="flex-none p-6">*/}
+            {/*    <div className="max-w-4xl mx-auto">*/}
+            {/*        <div className="relative flex rounded-xl shadow-sm">*/}
+            {/*            <button*/}
+            {/*                onClick={onClose}*/}
+            {/*                className="flex-none px-4 py-3 rounded-l-xl flex items-center gap-2*/}
+            {/*        transition-all duration-200*/}
+            {/*        bg-gray-200 text-gray-800 shadow-inner"*/}
+            {/*            >*/}
+            {/*                <Layout className="w-4 h-4"/>*/}
+            {/*                <span className="text-sm font-medium">项目面板</span>*/}
+            {/*            </button>*/}
+            {/*            <div className="flex-1 relative">*/}
+            {/*                <MessageInput onSend={onSendMessage}/>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        <div className="mt-2 text-xs text-gray-400 text-center">*/}
+            {/*            按 Enter 发送，Shift + Enter 换行*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
+            <ChatInput onClose={onClose} onSendMessage={onSendMessage} isPanelOpen={true}/>
 </div>
 )
     ;

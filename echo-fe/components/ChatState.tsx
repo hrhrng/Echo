@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {Layout, Send} from "lucide-react";
 import MessageInput from "@/components/MessageInput";
+import ChatInput from "@/components/chat/ChatInput";
 
 
 interface Quote {
@@ -135,17 +136,18 @@ const UserMessage = ({ message, isNew }: { message: Message; isNew?: boolean }) 
 );
 
 
-
 const ChatState = ({
                        messages,
                        onSendMessage,
                        onQuotaClick,
-                       onOpenPanel,  // 新增
+                       onOpenPanel,
+                       isPanelOpen = false
                    }: {
     messages: Message[];
     onSendMessage: (message: string) => void;
     onQuotaClick: (id: number) => void;
-    onOpenPanel: () => void;  // 新增
+    onOpenPanel: () => void;
+    isPanelOpen?: boolean;
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
@@ -158,20 +160,16 @@ const ChatState = ({
         }
     }, [messages]);
 
-    const scrollToBottom = () => {
+    useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    };
-
-    useEffect(() => {
-        scrollToBottom();
     }, [visibleMessages]);
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <div className="flex-1 flex">
-                <div className="flex-1 flex flex-col bg-white">
+        <div className="h-screen flex flex-col relative">
+            <div className="absolute inset-0 flex">
+                <div className="flex-1 flex flex-col h-full">
                     <div className="flex-none py-6 px-6">
                         {/*<Logo className="transform scale-90" />*/}
                     </div>
@@ -192,36 +190,17 @@ const ChatState = ({
                                 />
                             )
                         ))}
-                        <div ref={messagesEndRef}/>
-                    </div>
-                    <div className="flex-none p-6">
-                        <div className="max-w-4xl mx-auto">
-                            <div className="relative flex rounded-xl shadow-sm">
-                                <button
-                                    onClick={onOpenPanel}
-                                    className="flex-none px-4 py-3 rounded-l-xl flex items-center gap-2
-                    transition-all duration-200
-                    bg-white text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                                >
-                                    <Layout className="w-4 h-4"/>
-                                    <span className="text-sm font-medium">项目面板</span>
-                                </button>
-                                <div className="flex-1 relative">
-                                    <MessageInput onSend={onSendMessage}/>
-                                </div>
-                            </div>
-                            <div className="mt-2 text-xs text-gray-400 text-center">
-                                按 Enter 发送，Shift + Enter 换行
-                            </div>
-                        </div>
+                        <div ref={messagesEndRef} className="h-32"/>
                     </div>
                 </div>
             </div>
+            <ChatInput
+                onClose={onOpenPanel}
+                onSendMessage={onSendMessage}
+                isPanelOpen={isPanelOpen}
+            />
         </div>
     );
 };
 
-// 修改 MessageInput 组件，移除外层容器样式
-
-
-export default ChatState;
+export default ChatState
