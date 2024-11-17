@@ -3,13 +3,24 @@ import { useState } from 'react';
 import { patuaOne } from '@/app/font';
 
 
-const SIDEBAR_ITEMS = Array(20)
-    .fill(null)
-    .map((_, index) => ({
-        id: index + 1,
-        title: `群聊 ${index + 1}`,
-    }));
-
+const SIDEBAR_ITEMS = [
+    {
+        id:"youhuixianxiang",
+        title:"机酒优惠先享"
+    },
+    {
+        id:"ercidingdan",
+        title:"订单详情二次售卖改版"
+    },
+    {
+        id:"youhuixianxiang1",
+        title:"机酒优惠先享1"
+    },
+    {
+        id:"ercidingdan1",
+        title:"订单详情二次售卖改版"
+    }
+]
 const Sidebar = ({ isLeftPinned, togglePin, setSelectedItem, selectedItem }) => {
     const [isLeftExpanded, setIsLeftExpanded] = useState(false);
 

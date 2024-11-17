@@ -106,7 +106,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onClose, onSendMessage, isPanelOp
 
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6" ref={rootRef}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6 z-50" ref={rootRef}>
 
                 <div className="mb-0">
                     <ReferencedItems onItemRemove={()=>handleContentChange()} onSuggestionSelect={handleQuestionSelect}/>

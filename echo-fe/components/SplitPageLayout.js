@@ -1,8 +1,8 @@
-import {useCallback, useRef, useState} from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import ChatSidebar from './ChatSidebar';
 import ChatInterface from "@/components/ChatInterface";
-import {ReferenceProvider} from "@/contexts/ReferenceContext";
+import { ReferenceProvider } from "@/contexts/ReferenceContext";
 
 const SplitPageLayout = () => {
     const chatContainerRef = useRef(null);
@@ -10,13 +10,27 @@ const SplitPageLayout = () => {
     const [activeId, setActiveId] = useState(null);
     const [isRightCollapsed, setIsRightCollapsed] = useState(true);
     const [isLeftPinned, setIsLeftPinned] = useState(false);
-    const [selectedItem, setSelectedItem] = useState(1);
+    const [selectedItem, setSelectedItem] = useState("youhuixianxiang");
     const [isLeftExpanded, setIsLeftExpanded] = useState(false);
+    const [currentChatId, setCurrentChatId] = useState("youhuixianxiang");
 
     const togglePin = () => setIsLeftPinned(!isLeftPinned);
     const toggleRightSidebar = () => setIsRightCollapsed(!isRightCollapsed);
 
     const activeIndexRef = useRef(null);
+
+    // 处理项目选择变化，更新 chatId
+    const handleItemSelect = useCallback((itemId) => {
+        console.log("handleItemSelect"+JSON.stringify(itemId))
+        setSelectedItem(itemId);
+        // 根据选中的项目生成或获取对应的 chatId
+        setCurrentChatId(itemId);
+    }, []);
+
+    // 初始化时设置默认 chatId
+    useEffect(() => {
+        setCurrentChatId(selectedItem);
+    }, []);
 
     const handleQuotaClick = useCallback((index) => {
         console.log("scroll to index:" + index);
@@ -76,7 +90,7 @@ const SplitPageLayout = () => {
                 isLeftExpanded={isLeftExpanded}
                 isLeftPinned={isLeftPinned}
                 togglePin={togglePin}
-                setSelectedItem={setSelectedItem}
+                setSelectedItem={handleItemSelect}
                 selectedItem={selectedItem}
                 setIsLeftExpanded={setIsLeftExpanded}
             />
@@ -87,17 +101,20 @@ const SplitPageLayout = () => {
                 }`}
             >
                 <ReferenceProvider>
-                    <ChatInterface onQuotaClick={handleQuotaClick}/>
+                    <ChatInterface
+                        chatId={currentChatId}
+                        onQuotaClick={handleQuotaClick}
+                        key={currentChatId} // 确保切换 chatId 时重新渲染
+                    />
                 </ReferenceProvider>
-
             </div>
-
 
             <ChatSidebar
                 isRightCollapsed={isRightCollapsed}
                 toggleRightSidebar={toggleRightSidebar}
                 chatContainerRef={chatContainerRef}
                 activeId={activeId}
+                groupId={currentChatId} // 更新为使用当前的 chatId
             />
         </div>
     );

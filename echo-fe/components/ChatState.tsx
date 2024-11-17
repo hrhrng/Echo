@@ -11,50 +11,63 @@ interface Quote {
 interface Message {
     id: number;
     type: 'user' | 'bot';
-    text: string;
+    content: string;
     timestamp: Date;
-    quotes?: Quote[];
+    quotes?: number[];
 }
-const BotMessage = ({
-                        message,
-                        isNew,
-                        onQuotaClick
-                    }: {
-    message: Message;
-    isNew?: boolean;
-    onQuotaClick: (id: number) => void;
-}) => (
-    <div className={`flex items-start gap-4 max-w-4xl mx-auto transition-all duration-500 ${
-        isNew ? 'animate-message-appear' : ''
-    }`}>
-        <BotAvatar />
-        <div className="flex-1 max-w-[85%]">
-            <div className="prose text-gray-800">
-                {renderMessageWithQuotes(message.text, message.quotes || [], onQuotaClick)}
-            </div>
-        </div>
-    </div>
-);
 
-
-const BotAvatar = () => (
+// BotAvatar 组件修改，添加 onClick 属性
+const BotAvatar = ({ onClick }: { onClick?: () => void }) => (
     <div
-        className="relative flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-violet-100 shadow-md flex items-center justify-center overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-lg hover:from-blue-200 hover:to-violet-200">
+        onClick={onClick}
+        className="relative flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-violet-100
+            shadow-md flex items-center justify-center overflow-hidden group cursor-pointer
+            transition-all duration-300 hover:shadow-lg hover:from-blue-200 hover:to-violet-200"
+    >
         {/* Decorative background circles */}
-        <div
-            className="absolute -right-3 -top-3 w-8 h-8 rounded-full bg-blue-200/40 transition-transform duration-300 group-hover:scale-125"></div>
-        <div
-            className="absolute -left-3 -bottom-3 w-7 h-7 rounded-full bg-violet-200/30 transition-transform duration-300 group-hover:scale-125"></div>
+        <div className="absolute -right-3 -top-3 w-8 h-8 rounded-full bg-blue-200/40
+            transition-transform duration-300 group-hover:scale-125">
+        </div>
+        <div className="absolute -left-3 -bottom-3 w-7 h-7 rounded-full bg-violet-200/30
+            transition-transform duration-300 group-hover:scale-125">
+        </div>
 
         {/* Letter E with enhanced hover effect */}
-        <span className="relative text-lg font-bold text-blue-500/90 font-mono transform transition-all duration-300
-            group-hover:scale-125 group-hover:text-blue-600
-            hover:rotate-12">
+        <span className="relative text-lg font-bold text-blue-500/90 font-mono transform
+            transition-all duration-300 group-hover:scale-125 group-hover:text-blue-600
+            hover:rotate-12"
+        >
             E
         </span>
 
         {/* Highlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/30
+            opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        </div>
+    </div>
+);
+
+// BotMessage 组件修改，添加 onAvatarClick 属性
+const BotMessage = ({
+                        message,
+                        isNew,
+                        onQuotaClick,
+                        onAvatarClick
+                    }: {
+    message: Message;
+    isNew?: boolean;
+    onQuotaClick: (id: number) => void;
+    onAvatarClick?: () => void;
+}) => (
+    <div className={`flex items-start gap-4 max-w-4xl mx-auto transition-all duration-500 ${
+        isNew ? 'animate-message-appear' : ''
+    }`}>
+        <BotAvatar onClick={onAvatarClick} />
+        <div className="flex-1 max-w-[85%]">
+            <div className="prose text-gray-800">
+                {renderMessageWithQuotes(message.content, message.quotes || [], onQuotaClick)}
+            </div>
+        </div>
     </div>
 );
 
@@ -80,7 +93,8 @@ const QuoteNumber = ({
 
 
 // 解析消息文本中的引用标记
-const renderMessageWithQuotes = (text: string, quotes: Quote[] = [], onQuoteClick: (id: number) => void) => {
+const renderMessageWithQuotes = (text: string, quotes: number[] = [], onQuoteClick: (id: number) => void) => {
+    console.log("quotes:"+JSON.stringify(quotes) + " text:" + text)
     if (!quotes.length) return text;
 
     // 使用正则表达式匹配引用标记和前面的文本
@@ -110,7 +124,7 @@ const renderMessageWithQuotes = (text: string, quotes: Quote[] = [], onQuoteClic
                     {part.text}
                     {part.quoteId && (
                         <QuoteNumber
-                            number={quotes.findIndex(q => q.id === part.quoteId) + 1}
+                            number={quotes.findIndex(q => q === part.quoteId) + 1}
                             onClick={() => onQuoteClick(part.quoteId!)}
                         />
                     )}
@@ -129,7 +143,7 @@ const UserMessage = ({ message, isNew }: { message: Message; isNew?: boolean }) 
     }`}>
         <div className="max-w-[85%]">
             <div className="px-4 py-2.5 bg-gray-100 text-gray-800 rounded-2xl rounded-tr-sm">
-                {message.text}
+                {message.content}
             </div>
         </div>
     </div>
@@ -141,13 +155,15 @@ const ChatState = ({
                        onSendMessage,
                        onQuotaClick,
                        onOpenPanel,
-                       isPanelOpen = false
+                       isPanelOpen = false,
+                       onReturnToInitial
                    }: {
     messages: Message[];
     onSendMessage: (message: string) => void;
     onQuotaClick: (id: number) => void;
     onOpenPanel: () => void;
     isPanelOpen?: boolean;
+    onReturnToInitial: () => void;
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
@@ -162,7 +178,7 @@ const ChatState = ({
 
     useEffect(() => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
         }
     }, [visibleMessages]);
 
@@ -181,6 +197,7 @@ const ChatState = ({
                                     message={message}
                                     isNew={index === visibleMessages.length - 1}
                                     onQuotaClick={onQuotaClick}
+                                    onAvatarClick={onReturnToInitial} // 添加头像点击回调
                                 />
                             ) : (
                                 <UserMessage
