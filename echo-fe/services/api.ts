@@ -244,30 +244,45 @@ export const todoUtils = {
 import { mockProjectData } from './mockData';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+//
+// export const projectApi = {
+//     // 获取项目数据
+//     async getProjectData(projectId) {
+//         if (!projectId) {
+//             throw new ApiError('Project ID is required', 400);
+//         }
+//
+//         const url = `/api/project/data?${new URLSearchParams({ projectId }).toString()}`;
+//         return await fetchWithConfig(url, {
+//             method: 'GET',
+//         });
+//     }
+// };
+
+export const mockProjectApi = {
+    getProjectData: async (projectId) => {
+        // 模拟网络延迟
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 模拟API响应
+        return {
+            code: 0,
+            data: mockProjectData,
+            message: "success"
+        };
+    }
+};
+
 
 export const projectApi = {
-    async getProjectOverview() {
-        await delay(1000);
-        return mockProjectData;
-    },
+    getProjectData: async (projectId) => {
+        // 使用mock服务
+        const response = await mockProjectApi.getProjectData(projectId);
 
-    async toggleTodoStar(todoId) {
-        await delay(500);
-        return { success: true };
-    },
+        if (response.code !== 0) {
+            throw new Error(response.message || 'API error');
+        }
 
-    async regenerateProject() {
-        await delay(2000);
-        return mockProjectData;
-    },
-
-    async addReference(item) {
-        await delay(300);
-        return { success: true };
-    },
-
-    async removeReference(itemId) {
-        await delay(300);
-        return { success: true };
+        return response.data;
     }
 };

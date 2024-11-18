@@ -17,7 +17,7 @@ interface ReferencedItemsProps {
 
 // 推荐问题列表
 const suggestions = [
-    "这个项目的主要技术栈是什么？",
+    "这个项目的后端开发是谁？",
     "目前项目进度如何？",
     "有哪些待解决的关键问题？",
     "下一步开发计划是什么？",

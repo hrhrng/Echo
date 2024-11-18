@@ -428,13 +428,15 @@ const ChatInterface = ({
             <div className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
                 currentState === 'panel' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}>
-                <ProjectPanel
-                    onClose={handlePanelToggle}
-                    onSendMessage={handleSendMessage}
-                    message={message}
-                    setMessage={setMessage}
-                    onQuoteClick={onQuotaClick}
-                />
+                <div className="h-full w-full overflow-hidden">  {/* 添加这个容器 */}
+                    <ProjectPanel
+                        onClose={handlePanelToggle}
+                        onSendMessage={handleSendMessage}
+                        message={message}
+                        setMessage={setMessage}
+                        onQuoteClick={onQuotaClick}
+                    />
+                </div>
             </div>
         </div>
     );
