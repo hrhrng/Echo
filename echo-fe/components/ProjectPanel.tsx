@@ -21,6 +21,8 @@ import {DraggableItem} from "@/components/panel/DraggableItem";
 import {ReferenceItem} from "@/components/chat/reference/ReferencedItems";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageInput from "@/components/MessageInput";
+import TodoCard from "@/components/panel/TodoCard";
+import ProjectOverview from "@/components/panel/ProjectOverview";
 
 // 引用标签组件
 const QuoteTag = ({ quotes, onQuoteClick }: { quotes: number[]; onQuoteClick: (index: number) => void }) => (
@@ -42,60 +44,7 @@ const QuoteTag = ({ quotes, onQuoteClick }: { quotes: number[]; onQuoteClick: (i
     </div>
 );
 
-// 子组件：用户待办卡片
-const TodoCard = ({ todo, quotes, onQuoteClick }) => {
-    const [remindOpen, setRemindOpen] = useState(false);
 
-    const handleSendRemind = (message: string) => {
-        console.log('发送催办消息:', message);
-        setRemindOpen(false);
-    };
-
-    const dragItem : ReferenceItem = {
-        id: todo.id,
-        type: 'todo',
-        title: todo.title,
-    };
-
-    return (
-        <DraggableItem item={dragItem}>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <>
-                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-gray-900">{todo.title}</h4>
-                                    <QuoteTag quotes={quotes} onQuoteClick={onQuoteClick} />
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">{todo.detail}</p>
-                            </div>
-                            <button
-                                onClick={() => setRemindOpen(true)}
-                                className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100"
-                            >
-                                催办
-                            </button>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <UserCheck className="w-4 h-4" />
-                            <span>{todo.assignee}</span>
-                        </div>
-                    </div>
-
-                    <RemindDialog
-                        open={remindOpen}
-                        onOpenChange={setRemindOpen}
-                        todo={todo}
-                        onSend={handleSendRemind}
-                        onRegenerate={() => {}}
-                    />
-                </>
-            </div>
-        </DraggableItem>
-
-    );
-};
 
 // 子组件：催办状态卡片
 const RemindCard = ({ remind, quotes, onQuoteClick }) => (
@@ -253,142 +202,142 @@ const ProjectTimeline = ({ items , onQuoteClick}) => (
 
 // 子组件：项目概览卡片
 // 修改：项目概览组件
-const ProjectOverview = ({ stats, teams, onQuoteClick,onToggleStar }) => (
-    <div className="space-y-6">
-        {/* 基础统计信息 */}
-        <div className="grid grid-cols-3 gap-4">
-            {[
-                { icon: Clock, label: '项目时长', value: stats.duration },
-                { icon: MessageSquare, label: '有效沟通', value: stats.messageCount },
-                { icon: CheckCircle, label: '解决问题', value: stats.solvedCount },
-            ].map((item, index) => (
-                <div key={index} className="bg-white p-4 rounded-lg border border-gray-100">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                        <item.icon className="w-4 h-4" />
-                        <span className="text-sm">{item.label}</span>
-                    </div>
-                    <div className="text-2xl font-semibold text-gray-900">{item.value}</div>
-                </div>
-            ))}
-        </div>
-
-        {/* 团队成员信息 */}
-        <div className="grid grid-cols-2 gap-4">
-            {teams.map((team, index) => (
-                <TeamMemberCard key={index} team={team} />
-            ))}
-        </div>
-
-        {/* 项目流水线 */}
-        <ProjectTimeline
-            items={[
-                {
-                    id: 1,
-                    user: "张三",
-                    action: "提交了文档",
-                    time: "2小时前",
-                    result: "已完成",
-                    quotes: [1, 2]
-                },
-                {
-                    id: 2,
-                    user: "李四",
-                    action: "解决了问题",
-                    time: "4小时前",
-                    result: "已验证",
-                    quotes: [3]
-                }
-            ]}
-            onQuoteClick={onQuoteClick}
-        />
-
-        {/* 项目待办事项 */}
-        <ProjectTodoList
-            todos={[
-                {
-                    id:0,
-                    title: "优化系统性能",
-                    detail: "进行系统性能分析，找出瓶颈并提出优化方案",
-                    priority: "high",
-                    assignee: "张三",
-                    deadline: "2024-03-20",
-                    date: "2024-03-15",
-                    labels: ["技术优化", "性能"],
-                    quotes: [4, 5]
-
-                },
-                {
-                    id:1,
-                    title: "完善用户文档",
-                    detail: "编写详细的用户使用手册和API文档",
-                    priority: "medium",
-                    assignee: "李四",
-                    deadline: "2024-03-25",
-                    date: "2024-03-16",
-                    labels: ["文档", "用户体验"],
-                    quotes: [4, 5]
-                },
-                {
-                    id:2,
-                    title: "UI界面优化",
-                    detail: "优化移动端适配和暗黑模式支持",
-                    priority: "low",
-                    assignee: "王五",
-                    deadline: "2024-03-30",
-                    date: "2024-03-17",
-                    labels: ["UI设计", "移动端"],
-                    quotes: [4, 5]
-                }
-            ]}
-            onQuoteClick={onQuoteClick}
-            onToggleStar={onToggleStar}
-        />
-
-        {/* 已解决问题列表 */}
-        <ResolvedIssuesList
-            issues={[
-                {
-                    title: "数据库查询性能问题",
-                    detail: "系统在高并发场景下数据库查询响应缓慢",
-                    conclusion: "1. 优化了关键SQL查询语句\n2. 添加了适当的索引\n3. 实现了查询缓存机制\n\n经测试，查询响应时间降低了60%",
-                    resolvedBy: "张三",
-                    createdDate: "2024-03-10",
-                    resolvedDate: "2024-03-14",
-                    duration: "4天",
-                    conclusionDate: "2024-03-15",
-                    quotes: [4, 5],
-                    conclusionQuotes: [1]
-                },
-                {
-                    title: "用户认证机制优化",
-                    detail: "现有认证方式安全性不足，需要加强",
-                    conclusion: "1. 实现了JWT token认证\n2. 添加了双因素认证支持\n3. 加强了密码策略\n\n系统安全性得到显著提升",
-                    resolvedBy: "李四",
-                    createdDate: "2024-03-08",
-                    resolvedDate: "2024-03-12",
-                    duration: "4天",
-                    conclusionDate: "2024-03-13",
-                    quotes: [4, 5],
-                    conclusionQuotes: [1]
-                },
-                {
-                    title: "移动端适配问题",
-                    detail: "部分页面在移动设备上显示异常，需要优化适配方案",
-                    conclusion: "1. 重构了响应式布局代码\n2. 优化了移动端特定组件\n3. 添加了断点调试机制\n\n已完成全部移动端设备测试，显示正常",
-                    resolvedBy: "王五",
-                    createdDate: "2024-03-05",
-                    resolvedDate: "2024-03-07",
-                    duration: "2天",
-                    conclusionDate: "2024-03-08",
-                    quotes: [4, 5],
-                    conclusionQuotes: [1]
-                }
-            ]}
-            onQuoteClick={onQuoteClick}
-        />
-
-    </div>
-);
+// const ProjectOverview = ({ stats, teams, onQuoteClick,onToggleStar }) => (
+//     <div className="space-y-6">
+//         {/* 基础统计信息 */}
+//         <div className="grid grid-cols-3 gap-4">
+//             {[
+//                 { icon: Clock, label: '项目时长', value: stats.duration },
+//                 { icon: MessageSquare, label: '有效沟通', value: stats.messageCount },
+//                 { icon: CheckCircle, label: '解决问题', value: stats.solvedCount },
+//             ].map((item, index) => (
+//                 <div key={index} className="bg-white p-4 rounded-lg border border-gray-100">
+//                     <div className="flex items-center gap-2 text-gray-600 mb-2">
+//                         <item.icon className="w-4 h-4" />
+//                         <span className="text-sm">{item.label}</span>
+//                     </div>
+//                     <div className="text-2xl font-semibold text-gray-900">{item.value}</div>
+//                 </div>
+//             ))}
+//         </div>
+//
+//         {/* 团队成员信息 */}
+//         <div className="grid grid-cols-2 gap-4">
+//             {teams.map((team, index) => (
+//                 <TeamMemberCard key={index} team={team} />
+//             ))}
+//         </div>
+//
+//         {/* 项目流水线 */}
+//         <ProjectTimeline
+//             items={[
+//                 {
+//                     id: 1,
+//                     user: "张三",
+//                     action: "提交了文档",
+//                     time: "2小时前",
+//                     result: "已完成",
+//                     quotes: [1, 2]
+//                 },
+//                 {
+//                     id: 2,
+//                     user: "李四",
+//                     action: "解决了问题",
+//                     time: "4小时前",
+//                     result: "已验证",
+//                     quotes: [3]
+//                 }
+//             ]}
+//             onQuoteClick={onQuoteClick}
+//         />
+//
+//         {/* 项目待办事项 */}
+//         <ProjectTodoList
+//             todos={[
+//                 {
+//                     id:0,
+//                     title: "优化系统性能",
+//                     detail: "进行系统性能分析，找出瓶颈并提出优化方案",
+//                     priority: "high",
+//                     assignee: "张三",
+//                     deadline: "2024-03-20",
+//                     date: "2024-03-15",
+//                     labels: ["技术优化", "性能"],
+//                     quotes: [4, 5]
+//
+//                 },
+//                 {
+//                     id:1,
+//                     title: "完善用户文档",
+//                     detail: "编写详细的用户使用手册和API文档",
+//                     priority: "medium",
+//                     assignee: "李四",
+//                     deadline: "2024-03-25",
+//                     date: "2024-03-16",
+//                     labels: ["文档", "用户体验"],
+//                     quotes: [4, 5]
+//                 },
+//                 {
+//                     id:2,
+//                     title: "UI界面优化",
+//                     detail: "优化移动端适配和暗黑模式支持",
+//                     priority: "low",
+//                     assignee: "王五",
+//                     deadline: "2024-03-30",
+//                     date: "2024-03-17",
+//                     labels: ["UI设计", "移动端"],
+//                     quotes: [4, 5]
+//                 }
+//             ]}
+//             onQuoteClick={onQuoteClick}
+//             onToggleStar={onToggleStar}
+//         />
+//
+//         {/* 已解决问题列表 */}
+//         <ResolvedIssuesList
+//             issues={[
+//                 {
+//                     title: "数据库查询性能问题",
+//                     detail: "系统在高并发场景下数据库查询响应缓慢",
+//                     conclusion: "1. 优化了关键SQL查询语句\n2. 添加了适当的索引\n3. 实现了查询缓存机制\n\n经测试，查询响应时间降低了60%",
+//                     resolvedBy: "张三",
+//                     createdDate: "2024-03-10",
+//                     resolvedDate: "2024-03-14",
+//                     duration: "4天",
+//                     conclusionDate: "2024-03-15",
+//                     quotes: [4, 5],
+//                     conclusionQuotes: [1]
+//                 },
+//                 {
+//                     title: "用户认证机制优化",
+//                     detail: "现有认证方式安全性不足，需要加强",
+//                     conclusion: "1. 实现了JWT token认证\n2. 添加了双因素认证支持\n3. 加强了密码策略\n\n系统安全性得到显著提升",
+//                     resolvedBy: "李四",
+//                     createdDate: "2024-03-08",
+//                     resolvedDate: "2024-03-12",
+//                     duration: "4天",
+//                     conclusionDate: "2024-03-13",
+//                     quotes: [4, 5],
+//                     conclusionQuotes: [1]
+//                 },
+//                 {
+//                     title: "移动端适配问题",
+//                     detail: "部分页面在移动设备上显示异常，需要优化适配方案",
+//                     conclusion: "1. 重构了响应式布局代码\n2. 优化了移动端特定组件\n3. 添加了断点调试机制\n\n已完成全部移动端设备测试，显示正常",
+//                     resolvedBy: "王五",
+//                     createdDate: "2024-03-05",
+//                     resolvedDate: "2024-03-07",
+//                     duration: "2天",
+//                     conclusionDate: "2024-03-08",
+//                     quotes: [4, 5],
+//                     conclusionQuotes: [1]
+//                 }
+//             ]}
+//             onQuoteClick={onQuoteClick}
+//         />
+//
+//     </div>
+// );
 
 const ProjectTodoList = ({ todos, onToggleStar, onQuoteClick }) => (
     <div className="bg-white rounded-lg border border-gray-100">
@@ -532,16 +481,14 @@ const ResolvedIssuesList = ({issues, onQuoteClick}) => (
     </div>
 );
 const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
-    const [message, setMessage] = useState('');
-
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [chatInputHeight, setChatInputHeight] = useState(0);
 
-    // 处理重新生成功能
     const handleRegenerate = async () => {
         setIsRegenerating(true);
         try {
-            // 这里添加实际的重新生成逻辑
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 模拟 API 调用
+            // 实际重新生成的逻辑
+            await new Promise(resolve => setTimeout(resolve, 2000));
             console.log('重新生成完成');
         } catch (error) {
             console.error('重新生成失败:', error);
@@ -615,11 +562,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
         }
     ];
 
-    const [chatInputHeight, setChatInputHeight] = useState(0);
-
-    // 处理ChatInput渲染完成的回调
     const handleChatInputRender = (height) => {
-        console.log(height)
         setChatInputHeight(height);
     };
 
@@ -636,9 +579,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
 
             {/* 主内容区域 */}
             <div className="flex-1 min-h-0 overflow-y-auto"
-                 style={{
-                     paddingBottom: chatInputHeight
-                 }}>
+                 style={{ paddingBottom: chatInputHeight }}>
                 <div className="px-8 pt-3 pb-6">
                     <div className="max-w-6xl mx-auto space-y-8">
                         {/* 我的关注部分 */}
@@ -646,7 +587,7 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                             <div className="grid grid-cols-2 gap-6">
                                 {/* 左侧：待办和催办 */}
                                 <div className="space-y-6">
-                                    {/* 待办事项 */}
+                                    {/* 待办事项 - 使用更新后的 TodoCard */}
                                     <div className="space-y-4">
                                         <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                             <Clock className="w-4 h-4 text-blue-500"/>
@@ -654,23 +595,6 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                         </h4>
                                         <div className="space-y-3">
                                             <TodoCard
-                                                todo={{
-                                                    id: 1,
-                                                    title: "更新项目文档",
-                                                    detail: "需要更新最新的项目进展和结论",
-                                                    assignee: "张三"
-                                                }}
-                                                quotes={[1, 2]}
-                                                onQuoteClick={onQuoteClick}
-                                            />
-                                            <TodoCard
-                                                todo={{
-                                                    id: 2,
-                                                    title: "代码审查",
-                                                    detail: "检查新增功能的代码实现",
-                                                    assignee: "李四"
-                                                }}
-                                                quotes={[3, 4]}
                                                 onQuoteClick={onQuoteClick}
                                             />
                                         </div>
@@ -718,26 +642,12 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                                 title: "性能优化方案确认",
                                                 detail: "完成了项目性能瓶颈分析和优化方案的制定",
                                                 date: "2024-03-15",
-                                                conclusion: "通过引入缓存层和优化数据库查询，预计可提升系统性能30%。具体措施包括：\n1. 引入 Redis 缓存热点数据\n2. 优化数据库索引结构\n3. 实现数据库读写分离",
+                                                conclusion: "通过引入缓存层和优化数据库查询，预计可提升系统性能30%。",
                                                 proposer: "李四",
                                                 conclusionDate: "2024-03-15"
                                             }}
                                             itemQuotes={[7, 8]}
                                             conclusionQuotes={[9, 10]}
-                                            onQuoteClick={onQuoteClick}
-                                        />
-                                        <CompletedItemCard
-                                            item={{
-                                                id: 4,
-                                                title: "架构设计方案确定",
-                                                detail: "完成系统整体架构设计评审",
-                                                date: "2024-03-14",
-                                                conclusion: "决定采用微服务架构，使用 Kubernetes 作为容器编排平台。主要考虑：\n1. 系统模块解耦\n2. 便于扩展和维护\n3. 支持灰度发布",
-                                                proposer: "王五",
-                                                conclusionDate: "2024-03-14"
-                                            }}
-                                            itemQuotes={[11]}
-                                            conclusionQuotes={[12, 13]}
                                             onQuoteClick={onQuoteClick}
                                         />
                                     </div>
@@ -746,7 +656,6 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                         </CollapsibleSection>
 
                         {/* 项目总览部分 */}
-                        {/* 项目总览部分 - 添加重新生成按钮 */}
                         <CollapsibleSection
                             icon={FileText}
                             title="项目总览"
@@ -807,11 +716,15 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                 </div>
             </div>
 
-
-            <ChatInput onClose={onClose} onSendMessage={onSendMessage} isPanelOpen={true} onRendered={handleChatInputRender} />
-</div>
-)
-    ;
+            <ChatInput
+                onClose={onClose}
+                onSendMessage={onSendMessage}
+                isPanelOpen={true}
+                onRendered={handleChatInputRender}
+            />
+        </div>
+    );
 };
+
 
 export default ProjectPanel;

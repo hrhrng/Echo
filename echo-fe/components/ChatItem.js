@@ -1,14 +1,14 @@
-import { useMemo } from "react";
+import {memo, useMemo} from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-const ChatItem = ({ chat, activeId }) => {
+
+const ChatItem = memo(({ chat, isActive }) => {
     const { id, content, sender, timestamp, qtalkId } = chat;
 
     // 优化后的柔和配色方案
     const getAvatarStyle = useMemo(() => {
-        // 现代柔和的配色方案
         const colorPairs = [
             { bg: 'bg-violet-100', text: 'text-violet-600' },
             { bg: 'bg-sky-100', text: 'text-sky-600' },
@@ -26,15 +26,12 @@ const ChatItem = ({ chat, activeId }) => {
         return colorPairs[index];
     }, [qtalkId]);
 
-    // 获取用户名首字母
     const userInitial = useMemo(() => {
         return sender.charAt(0).toUpperCase();
     }, [sender]);
 
-    // 解析消息内容
     const parsedContent = useMemo(() => parseMessage(content), [content]);
 
-    // 格式化时间戳
     const formattedTime = useMemo(() => {
         const date = new Date(timestamp);
         return {
@@ -51,16 +48,14 @@ const ChatItem = ({ chat, activeId }) => {
 
     return (
         <div
-            id={id}
             className={`p-4 rounded-lg border transition-colors ${
-                activeId === id
-                    ? 'bg-blue-50 border-blue-200'
+                isActive
+                    ? 'bg-blue-200 border-blue-500' // 从 blue-100 改为 blue-200，border 从 blue-200 改为 blue-500
                     : 'border-gray-100 hover:bg-gray-50'
             }`}
             data-chat-index={id}
         >
             <div className="flex gap-3">
-                {/* 优化后的头像组件 */}
                 <Avatar className="h-10 w-10 ring-2 ring-white">
                     <AvatarImage
                         src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(sender)}`}
@@ -73,9 +68,7 @@ const ChatItem = ({ chat, activeId }) => {
                     </AvatarFallback>
                 </Avatar>
 
-                {/* 消息内容区 */}
                 <div className="flex-1 min-w-0">
-                    {/* 用户信息和时间 */}
                     <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                             <span className="font-medium text-gray-900">{sender}</span>
@@ -89,20 +82,19 @@ const ChatItem = ({ chat, activeId }) => {
                         </div>
                     </div>
 
-                    {/* 消息内容 */}
                     <div className="text-gray-700 space-y-2">
                         {parsedContent.map((part, index) => (
-                            <MessagePart key={index} part={part} />
+                            <MessagePart key={index} part={part}/>
                         ))}
                     </div>
                 </div>
             </div>
         </div>
     );
-};
+});
 
 // MessagePart component for rendering different message types
-const MessagePart = ({ part }) => {
+const MessagePart = ({part}) => {
     switch (part.type) {
         case 'text':
             return <div className="whitespace-pre-wrap break-words">{part.content}</div>;
@@ -187,5 +179,7 @@ const parseMessage = (message) => {
 
     return parts;
 };
+ChatItem.displayName = 'ChatItem';
+
 
 export default ChatItem;

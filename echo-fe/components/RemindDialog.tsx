@@ -1,92 +1,97 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, RefreshCw, Loader2, X } from 'lucide-react';
-
-interface RemindDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    todo: {
-        title: string;
-        detail: string;
-        assignee: string;
-    };
-    onSend: (message: string, feedback?: string) => void;
-    onRegenerate: () => void;
-}
-
-const RemindDialog = ({ open, onOpenChange, todo, onSend }: RemindDialogProps) => {
+// components/RemindDialog.js
+// components/RemindDialog.js
+import {Loader2, RefreshCw, Send, X} from "lucide-react";
+import React, {useEffect, useState} from "react";
+import {ApiError, reminderApi} from "@/services/api";
+// components/RemindDialog.js
+const RemindDialog = ({ open, onOpenChange, todo, onSend }) => {
     const [message, setMessage] = useState('');
     const [feedback, setFeedback] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isTyping, setIsTyping] = useState(false);
+    const [displayText, setDisplayText] = useState('');
     const [currentIndex, setCurrentIndex] = useState(0);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [error, setError] = useState('');
 
-    // 生成消息的函数
+    // 打字机效果
+    useEffect(() => {
+        if (!message || currentIndex >= message.length) return;
+
+        const timer = setTimeout(() => {
+            setDisplayText(prev => prev + message[currentIndex]);
+            setCurrentIndex(prev => prev + 1);
+        }, 30); // 可以调整这个值来改变打字速度
+
+        return () => clearTimeout(timer);
+    }, [currentIndex, message]);
+
     const generateMessage = async () => {
         setIsGenerating(true);
+        setError('');
+        setDisplayText('');
+        setCurrentIndex(0);
+
         try {
-            // 这里替换为实际的API调用
-            const response = await new Promise(resolve =>
-                setTimeout(() => resolve(`亲爱的${todo.assignee}：\n\n关于"${todo.title}"的待办事项，想跟您确认一下进展情况。该任务详情为：${todo.detail}。\n\n期待您的回复！`), 1000)
-            );
-            setCurrentIndex(0);
-            setIsTyping(true);
-            return response as string;
+            const result = await reminderApi.generateReminder({
+                event: todo.title,
+                before: message,
+                userInstruction: feedback
+            });
+
+            if (result.success) {
+                setMessage(result.message);
+                // 重置打字机索引以开始新的打字效果
+                setCurrentIndex(0);
+            } else {
+                setError(result.message || '生成失败');
+            }
         } catch (error) {
+            if (error instanceof ApiError) {
+                setError(`生成失败: ${error.message}`);
+            } else {
+                setError('生成消息失败，请重试');
+            }
             console.error('生成消息失败:', error);
-            return '';
         } finally {
             setIsGenerating(false);
         }
     };
 
-    // 打字机效果
-    useEffect(() => {
-        if (!isTyping || !message) return;
-
-        const timer = setTimeout(() => {
-            if (currentIndex < message.length) {
-                setCurrentIndex(prev => prev + 1);
-            } else {
-                setIsTyping(false);
-            }
-        }, 30);
-
-        return () => clearTimeout(timer);
-    }, [currentIndex, isTyping, message]);
-
-    // 初始生成和重置
-    useEffect(() => {
-        if (open) {
-            generateMessage().then(newMessage => setMessage(newMessage || ''));
-        } else {
-            setMessage('');
-            setFeedback('');
-            setIsGenerating(false);
-            setIsTyping(false);
-            setCurrentIndex(0);
-        }
-    }, [open, todo]);
-
-    // 自适应文本框高度
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [message]);
-
-    const handleRegenerate = async () => {
-        const newMessage = await generateMessage();
-        setMessage(newMessage || '');
+    // 清理函数
+    const cleanup = () => {
+        setMessage('');
+        setFeedback('');
+        setDisplayText('');
+        setCurrentIndex(0);
+        setError('');
+        setIsGenerating(false);
     };
 
-    if (!open) return null;
+    useEffect(() => {
+        if (open) {
+            generateMessage();
+        } else {
+            cleanup();
+        }
+    }, [open]);
 
-    return (
+    const handleSend = async () => {
+        try {
+            await reminderApi.sendReminder(message, todo.todoId);
+            onSend(message, feedback);
+            onOpenChange(false);
+        } catch (error) {
+            if (error instanceof ApiError) {
+                setError(`发送失败: ${error.message}`);
+            } else {
+                setError('发送消息失败，请重试');
+            }
+            console.error('发送消息失败:', error);
+        }
+    };
+
+    return open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black/50 backdrop-blur-sm px-4">
-            <div className="bg-white rounded-xl w-full max-w-2xl shadow-lg" onClick={e => e.stopPropagation()}>
-                {/* 对话框头部 */}
+            <div className="bg-white rounded-xl w-full max-w-2xl shadow-lg">
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="text-lg font-medium text-gray-900">待办催办</h3>
                     <button
@@ -97,23 +102,28 @@ const RemindDialog = ({ open, onOpenChange, todo, onSend }: RemindDialogProps) =
                     </button>
                 </div>
 
-                {/* 对话框内容 */}
                 <div className="p-4 space-y-4">
-                    <div className="relative">
-            <textarea
-                ref={textareaRef}
-                value={isTyping ? message.slice(0, currentIndex) : message}
-                onChange={(e) => !isTyping && setMessage(e.target.value)}
-                placeholder="正在生成催办消息..."
-                className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                resize-none transition-all"
-                disabled={isGenerating || isTyping}
-            />
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+                            {error}
+                        </div>
+                    )}
 
-                        {(isGenerating || isTyping) && (
-                            <div className="absolute right-3 top-3 flex items-center gap-2 text-sm text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm">
+                    <div className="relative">
+                        <textarea
+                            value={isGenerating ? displayText : message}
+                            onChange={(e) => !isGenerating && setMessage(e.target.value)}
+                            placeholder={isGenerating ? "正在生成催办消息..." : "请输入催办消息"}
+                            className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200
+                                focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                resize-none transition-all"
+                            disabled={isGenerating}
+                        />
+                        {isGenerating && (
+                            <div className="absolute right-3 top-3 flex items-center gap-2
+                                text-sm text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                {isGenerating ? '正在生成' : '正在输入'}
+                                正在生成
                             </div>
                         )}
                     </div>
@@ -126,28 +136,32 @@ const RemindDialog = ({ open, onOpenChange, todo, onSend }: RemindDialogProps) =
                             value={feedback}
                             onChange={(e) => setFeedback(e.target.value)}
                             placeholder="请输入你的修改建议..."
-                            className="w-full h-24 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                resize-none transition-all text-sm"
+                            className="w-full h-24 p-3 rounded-lg border border-gray-200
+                                focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                resize-none transition-all text-sm"
+                            disabled={isGenerating}
                         />
                     </div>
                 </div>
 
-                {/* 对话框底部 */}
-                <div className="flex items-center justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
+                <div className="flex items-center justify-end gap-2 p-4 border-t bg-gray-50">
                     <button
-                        onClick={handleRegenerate}
-                        disabled={isGenerating || isTyping}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300
-              rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={generateMessage}
+                        disabled={isGenerating}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
+                            text-gray-700 bg-white border border-gray-300 rounded-lg
+                            hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed
+                            transition-colors"
                     >
-                        <RefreshCw className="w-4 h-4" />
+                        <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
                         重新生成
                     </button>
                     <button
-                        onClick={() => onSend(message, feedback)}
-                        disabled={isGenerating || isTyping || !message.trim()}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600
-              rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={handleSend}
+                        disabled={isGenerating || !message.trim()}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
+                            text-white bg-blue-600 rounded-lg hover:bg-blue-700
+                            disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <Send className="w-4 h-4" />
                         发送催办
@@ -155,7 +169,7 @@ const RemindDialog = ({ open, onOpenChange, todo, onSend }: RemindDialogProps) =
                 </div>
             </div>
         </div>
-    );
+    ) : null;
 };
 
 export default RemindDialog;

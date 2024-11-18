@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef, useCallback, MutableRefObject} from 'react';
 import { Layout, Send } from 'lucide-react';
 import { patuaOne } from "@/app/font";
-import ChatState from "@/components/ChatState";
+import ChatState, {Action} from "@/components/ChatState";
 import ProjectPanel from "@/components/ProjectPanel";
 import {echoChatHistoryApi} from "@/services/api";
 import {echoWebSocketService} from "@/services/webSocket";
@@ -143,10 +143,8 @@ const InitialChatState = ({
 const ChatInterface = ({
                            chatId,
                            suggestedQuestions = [
-                               "如何开始使用 React？",
-                               "什么是虚拟 DOM？",
-                               "React Hooks 的优势是什么？",
-                               "如何处理状态管理？"
+                               "后端联调还有哪些",
+                               "关于支付中心商户号的事情，有结论了吗？"
                            ],
                            onQuotaClick
                        }) => {
@@ -252,14 +250,18 @@ const ChatInterface = ({
     const maxConnectionAttempts = 5; // 最大连接尝试次数
 
 
-    // 处理收到的 WebSocket 消息
+    const [currentAction, setCurrentAction] = useState<Action | undefined>();
+
     const handleWebSocketMessage = useCallback((message) => {
         const parsedMessage = echoWebSocketService.parseReceivedMessage(message);
+
         if (parsedMessage?.type === 'message') {
             setMessages(prev => [...prev, parsedMessage.data]);
+        } else if (parsedMessage?.type === 'action') {
+            // 设置当前的 action 数据
+            setCurrentAction(parsedMessage);
         }
     }, []);
-
 
 
     // 处理 WebSocket 错误
@@ -397,12 +399,29 @@ const ChatInterface = ({
             }`}>
                 <ChatState
                     messages={messages}
+                    actionData={currentAction}
                     onSendMessage={handleSendMessage}
                     isProjectPanelOpen={false}
                     onQuotaClick={onQuotaClick}
                     onOpenPanel={handlePanelToggle}
                     isLoading={isLoading}
                     onReturnToInitial={handleReturnToInitial}
+                    onGenUIAction={(action, accepted) => {
+                        // 处理 action
+                        if (accepted) {
+                            // 处理接受操作
+                            const todos = JSON.parse(action.data.message).todos;
+                            if (action.data.type === 'add') {
+                                // 处理添加待办
+                                console.log('Adding todo:', todos[0]);
+                            } else if (action.data.type === 'send') {
+                                // 处理催办
+                                console.log('Sending reminder:', todos[0]);
+                            }
+                        }
+                        // 清除当前 action
+                        setCurrentAction(undefined);
+                    }}
                 />
             </div>
 
