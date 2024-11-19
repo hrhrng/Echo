@@ -10,58 +10,30 @@ import RemindDialog from "@/components/RemindDialog";
 import {todoApi, todoUtils} from "@/services/api";
 
 // 修改后的渲染引用函数
-const renderMessageWithQuotes = (text: string, quotes: number[] = [], onQuoteClick: (id: number) => void) => {
-    if (!quotes.length) {
-        return text;
-    }
-
-    const regex = /([^]*?)\{\{quote:(\d+)\}\}/g;
-    const parts: Array<{text: string; quoteId?: number}> = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-        const [, content, quoteId] = match;
-        if (content) {
-            parts.push({ text: content });
-        }
-        parts.push({ text: '', quoteId: parseInt(quoteId) });
-        lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < text.length) {
-        parts.push({ text: text.slice(lastIndex) });
-    }
-
-    return parts.map((part, index) => (
-        <React.Fragment key={index}>
-            {part.text}
-            {part.quoteId && (
-                <QuoteNumber
-                    number={quotes.findIndex(q => q === part.quoteId) + 1}
-                    onClick={() => onQuoteClick(part.quoteId!)}
-                />
-            )}
-        </React.Fragment>
-    ));
-};
-
-const QuoteNumber = ({
-                         number,
-                         onClick
-                     }: {
+const QuoteNumber = React.memo(({
+                                    number,
+                                    onClick,
+                                    highlighted = false
+                                }: {
     number: number;
     onClick: () => void;
+    highlighted?: boolean;
 }) => (
     <button
         onClick={onClick}
-        className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium
-            bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full align-top
-            transition-colors duration-200 relative -top-1 ml-0.5"
+        className={`
+            inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium
+            ${highlighted
+            ? 'bg-blue-200 hover:bg-blue-300 text-blue-700'
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+        }
+            rounded-full align-top transition-colors duration-200 
+            relative -top-1 ml-0.5
+        `}
     >
         {number}
     </button>
-);
+));
 
 
 // BotAvatar 组件修改，添加 onClick 属性
@@ -205,8 +177,8 @@ const GenUI: React.FC<{
                     open={isRemindDialogOpen}
                     onOpenChange={setIsRemindDialogOpen}
                     todo={{
-                        title: todo.todoId,
-                        detail: todo.todoName,
+                        title: todo.todoName,
+                        detail: todo.todoDesc,
                         assignee: todo.qtalkId
                     }}
                     onSend={handleRemind}
@@ -219,7 +191,6 @@ const GenUI: React.FC<{
     return null;
 };
 
-
 const MessageContent = ({ content, quotes, onQuoteClick }) => {
     const [isReady, setIsReady] = useState(false);
 
@@ -229,16 +200,89 @@ const MessageContent = ({ content, quotes, onQuoteClick }) => {
         }
     }, [content]);
 
-    const processContent = (text: string) => {
-        if (!text || !quotes?.length) {
+    const processContent = (text) => {
+        if (!text || !Array.isArray(quotes)) {
             return text || '';
         }
 
-        const regex = /\{\{quote:(\d+)\}\}/g;
-        return text.replace(regex, (_, quoteId) => {
-            const index = quotes.findIndex(q => q === parseInt(quoteId)) + 1;
-            return `[QUOTE_${index}]`;
+        // 保留缩进，但防止被识别为代码块
+        text = text.split('\n').map(line => {
+            // 如果行首有空格，添加特殊标记
+            if (line.match(/^\s+/)) {
+                return `&nbsp;${line.trimLeft()}`;
+            }
+            return line;
+        }).join('\n');
+
+        // 处理引用标记
+        return text.replace(/\{\{quote:(\d+)\}\}/g, (_, quoteId) => {
+            const index = quotes.findIndex(q => q === parseInt(quoteId));
+            return index !== -1 ? `[QUOTE_${index + 1}]` : '';
         });
+    };
+
+    const renderTextWithQuotes = (text) => {
+        // 还原被转义的空格
+        text = text.replace(/&nbsp;/g, ' ');
+
+        const parts = text.split(/(\[QUOTE_\d+])/);
+        return parts.map((part, index) => {
+            const quoteMatch = part.match(/\[QUOTE_(\d+)]/);
+            if (quoteMatch) {
+                const quoteNumber = parseInt(quoteMatch[1]);
+                if (quoteNumber > 0 && quoteNumber <= quotes.length) {
+                    return (
+                        <QuoteNumber
+                            key={`quote-${index}`}
+                            number={quoteNumber}
+                            onClick={() => onQuoteClick(quotes[quoteNumber - 1])}
+                            highlighted={true}
+                        />
+                    );
+                }
+            }
+            return part;
+        });
+    };
+
+    const processNode = (node) => {
+        if (typeof node === 'string') {
+            return renderTextWithQuotes(node);
+        }
+        if (node?.props?.children) {
+            return React.createElement(
+                node.type,
+                { ...node.props, key: Math.random() },
+                React.Children.map(node.props.children, child => processNode(child))
+            );
+        }
+        if (node?.props?.value) {
+            return renderTextWithQuotes(node.props.value);
+        }
+        return node;
+    };
+
+    const Paragraph = ({ children, ...props }) => (
+        <p {...props} className="whitespace-pre-wrap">
+            {React.Children.map(children, child => processNode(child))}
+        </p>
+    );
+
+    const ListItem = ({ children, ...props }) => (
+        <li {...props}>
+            {React.Children.map(children, child => processNode(child))}
+        </li>
+    );
+
+    // 处理内联代码块
+    const Code = ({ children, ...props }) => {
+        // 如果内容以空格开头，说明是我们标记的缩进文本
+        if (typeof children === 'string' && children.startsWith('&nbsp;')) {
+            // 还原为普通文本并处理引用
+            return renderTextWithQuotes(children);
+        }
+        // 否则按正常代码块处理
+        return <code {...props}>{children}</code>;
     };
 
     if (!isReady) {
@@ -250,63 +294,21 @@ const MessageContent = ({ content, quotes, onQuoteClick }) => {
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                    code({ node, inline, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        return !inline && match ? (
-                            <div className="relative group">
-                                <SyntaxHighlighter
-                                    language={match[1]}
-                                    style={oneLight}
-                                    PreTag="div"
-                                    {...props}
-                                    customStyle={{
-                                        margin: 0,
-                                        borderRadius: '0.375rem',
-                                    }}
-                                >
-                                    {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(String(children));
-                                    }}
-                                    className="absolute top-2 right-2 p-1.5 rounded-md
-                                        bg-white/90 hover:bg-white shadow-sm opacity-0
-                                        group-hover:opacity-100 transition-opacity"
-                                >
-                                    <ClipboardIcon className="w-4 h-4 text-gray-500" />
-                                </button>
-                            </div>
-                        ) : (
-                            <code className={className} {...props}>
-                                {children}
-                            </code>
-                        );
-                    },
-                    p({ node, children, ...props }) {
-                        return (
-                            <p {...props} className="whitespace-pre-wrap">
-                                {React.Children.map(children, child => {
-                                    if (typeof child !== 'string') return child;
-
-                                    const parts = child.split(/(\[QUOTE_\d+\])/);
-                                    return parts.map((part, index) => {
-                                        const quoteMatch = part.match(/\[QUOTE_(\d+)\]/);
-                                        if (quoteMatch) {
-                                            const quoteNumber = parseInt(quoteMatch[1]);
-                                            return (
-                                                <QuoteNumber
-                                                    key={index}
-                                                    number={quoteNumber}
-                                                    onClick={() => onQuoteClick(quotes[quoteNumber - 1])}
-                                                />
-                                            );
-                                        }
-                                        return part;
-                                    });
-                                })}
-                            </p>
-                        );
+                    code: Code,
+                    p: Paragraph,
+                    li: ListItem,
+                    // 处理块级代码
+                    pre: ({ children, ...props }) => {
+                        // 如果是我们的缩进文本，直接渲染为段落
+                        if (children?.props?.children?.startsWith?.('&nbsp;')) {
+                            return (
+                                <p className="whitespace-pre-wrap">
+                                    {renderTextWithQuotes(children.props.children)}
+                                </p>
+                            );
+                        }
+                        // 否则按正常代码块处理
+                        return <pre {...props}>{children}</pre>;
                     }
                 }}
             >
@@ -315,7 +317,6 @@ const MessageContent = ({ content, quotes, onQuoteClick }) => {
         </div>
     );
 };
-
 // BotMessage 组件增加错误边界和数据验证
 const BotMessage: React.FC<{
     message: Message;
@@ -334,21 +335,67 @@ const BotMessage: React.FC<{
       }) => {
     const [hasError, setHasError] = useState(false);
     const [isContentReady, setIsContentReady] = useState(false);
+    const [processedContent, setProcessedContent] = useState<string | null>(null);
 
+    // 消息处理函数
+    const processMessage = (message: Message) => {
+        try {
+            // 检查消息是否有效
+            if (!message) {
+                console.warn('Received invalid message');
+                return null;
+            }
+
+            // 处理不同类型的消息内容
+            if (typeof message.content === 'string') {
+                return message.content;
+            } else if (message.content === null || message.content === undefined) {
+                console.warn('Message content is null or undefined');
+                return '';
+            } else {
+                // 处理其他类型的消息内容
+                const content = JSON.stringify(message.content);
+                console.log('Processed non-string message content:', content);
+                return content;
+            }
+        } catch (error) {
+            console.error('Error processing message:', error);
+            setHasError(true);
+            return null;
+        }
+    };
+
+    // 消息准备状态处理
     useEffect(() => {
-        if (message?.content) {
-            setIsContentReady(true);
+        if (message) {
+            const content = processMessage(message);
+            setProcessedContent(content);
+            setIsContentReady(!!content);
+        } else {
+            setIsContentReady(false);
+            setProcessedContent(null);
         }
     }, [message]);
 
+    // 错误处理
     if (hasError) {
         return (
-            <div className="text-red-500 p-4">
-                消息加载失败，请刷新页面重试
+            <div className="flex items-start gap-4 max-w-4xl mx-auto">
+                <BotAvatar onClick={onAvatarClick} />
+                <div className="text-red-500 p-4 rounded-lg bg-red-50">
+                    消息处理失败，请刷新页面重试
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="ml-2 text-red-600 hover:text-red-700 underline"
+                    >
+                        刷新页面
+                    </button>
+                </div>
             </div>
         );
     }
 
+    // 加载状态
     if (!isContentReady) {
         return (
             <div className="flex items-start gap-4 max-w-4xl mx-auto">
@@ -361,6 +408,7 @@ const BotMessage: React.FC<{
         );
     }
 
+    // 正常渲染
     return (
         <div className={`flex items-start gap-4 max-w-4xl mx-auto transition-all duration-500 ${
             isNew ? 'animate-message-appear' : ''
@@ -368,21 +416,26 @@ const BotMessage: React.FC<{
             <BotAvatar onClick={onAvatarClick} />
             <div className="flex-1 max-w-[85%]">
                 <MessageContent
-                    content={message.content}
+                    content={processedContent}
                     quotes={message.quotes}
                     onQuoteClick={onQuotaClick}
                 />
                 {isNew && actionData && (
                     <GenUI
                         action={actionData}
-                        onAccept={() => onGenUIAction?.(actionData, true)}
-                        onDecline={() => onGenUIAction?.(actionData, false)}
+                        onAccept={() => {
+                            console.log('Action accepted:', actionData);
+                            onGenUIAction?.(actionData, true);
+                        }}
+                        onDecline={() => {
+                            console.log('Action declined:', actionData);
+                            onGenUIAction?.(actionData, false);
+                        }}
                     />
                 )}
             </div>
         </div>
     );
 };
-
 
 export default BotMessage;

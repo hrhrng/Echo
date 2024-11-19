@@ -148,7 +148,6 @@ const ChatInterface = ({
                            ],
                            onQuotaClick
                        }) => {
-    // 从 sessionStorage 获取初始状态，如果没有则默认为 'initial'
     const getInitialState = () => {
         if (!chatId) return 'initial';
         const savedState = sessionStorage.getItem(`chat_state_${chatId}`);
@@ -161,12 +160,28 @@ const ChatInterface = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [currentAction, setCurrentAction] = useState<Action | undefined>();
+
     const wsManagerRef = useRef(null);
     const connectionAttemptsRef = useRef(0);
+    const messagesRef = useRef(messages);
 
+    // 同步消息到 ref
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
+    // 消息处理
+    const handleWebSocketMessage = useCallback((message) => {
+        const parsedMessage = echoWebSocketService.parseReceivedMessage(message);
+        console.log("Echo 收到了消息", parsedMessage);
 
-
+        if (parsedMessage?.type === 'message') {
+            setMessages([...messagesRef.current, parsedMessage.data]);
+        } else if (parsedMessage?.type === 'action') {
+            setCurrentAction(parsedMessage);
+        }
+    }, []);
 
     // 发送消息
     const handleSendMessage = useCallback((messageText) => {
@@ -175,29 +190,27 @@ const ChatInterface = ({
             return;
         }
 
-        // 构建消息对象
         const messageData = echoWebSocketService.buildUserMessage(chatId, messageText);
+        console.log("user 发送消息:", messageData);
 
-        // 乐观更新 UI
         const userMessage = {
             id: Date.now(),
             type: 'user',
             content: messageText,
             timestamp: new Date()
         };
-        setMessages(prev => [...prev, userMessage]);
+
+        setMessages([...messagesRef.current, userMessage]);
         setCurrentState('chat');
 
-        // 发送消息
         const sent = wsManagerRef.current.sendMessage(messageData);
         if (!sent) {
             setError('消息发送失败，请重试');
-            // 回滚 UI 更新
-            setMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+            setMessages(messagesRef.current.filter(msg => msg.id !== userMessage.id));
         }
     }, [chatId, isConnected]);
 
-    // 创建一个新的 setCurrentState 包装函数来同时更新 state 和 sessionStorage
+    // 更新当前状态
     const updateCurrentState = useCallback((newState) => {
         if (chatId) {
             sessionStorage.setItem(`chat_state_${chatId}`, newState);
@@ -205,24 +218,18 @@ const ChatInterface = ({
         setCurrentState(newState);
     }, [chatId]);
 
-
-
-    // 从 chat 状态返回到 initial 状态
     const handleReturnToInitial = useCallback(() => {
         if (currentState === 'chat') {
             updateCurrentState('initial');
         }
     }, [currentState, updateCurrentState]);
 
-    // 从 initial 状态返回到 chat 状态
     const handleReturnToChat = useCallback(() => {
-        if (currentState === 'initial' && messages.length > 0) {
+        if (currentState === 'initial' && messagesRef.current.length > 0) {
             updateCurrentState('chat');
         }
-    }, [currentState, messages.length, updateCurrentState]);
+    }, [currentState, updateCurrentState]);
 
-
-    // 更新所有使用 setCurrentState 的地方
     const handleStartChat = useCallback((message) => {
         if (isLoading) return;
         updateCurrentState('chat');
@@ -232,50 +239,21 @@ const ChatInterface = ({
     const handlePanelToggle = useCallback(() => {
         if (isLoading) return;
         updateCurrentState(currentState === 'panel'
-            ? (messages.length > 0 ? 'chat' : 'initial')
+            ? (messagesRef.current.length > 0 ? 'chat' : 'initial')
             : 'panel'
         );
-    }, [isLoading, currentState, messages.length, updateCurrentState]);
+    }, [isLoading, currentState, updateCurrentState]);
 
-    // 清理函数 - 在组件卸载或 chatId 改变时清理状态
-    useEffect(() => {
-        return () => {
-            if (chatId) {
-                // 可选：是否在组件卸载时清理存储的状态
-                // sessionStorage.removeItem(`chat_state_${chatId}`);
-            }
-        };
-    }, [chatId]);
-
-    const maxConnectionAttempts = 5; // 最大连接尝试次数
-
-
-    const [currentAction, setCurrentAction] = useState<Action | undefined>();
-
-    const handleWebSocketMessage = useCallback((message) => {
-        const parsedMessage = echoWebSocketService.parseReceivedMessage(message);
-
-        if (parsedMessage?.type === 'message') {
-            setMessages(prev => [...prev, parsedMessage.data]);
-        } else if (parsedMessage?.type === 'action') {
-            // 设置当前的 action 数据
-            setCurrentAction(parsedMessage);
-        }
-    }, []);
-
-
-    // 处理 WebSocket 错误
+    // WebSocket 错误处理
     const handleWebSocketError = useCallback((error) => {
         console.log('WebSocket 连接尝试:', connectionAttemptsRef.current + 1);
-
         connectionAttemptsRef.current += 1;
 
-        if (connectionAttemptsRef.current >= maxConnectionAttempts) {
+        if (connectionAttemptsRef.current >= 5) {
             console.log('WebSocket 错误: 达到最大重试次数', error);
             setError('WebSocket 连接出错，请刷新页面重试');
             setIsConnected(false);
         } else {
-            // 未达到最大尝试次数，不设置错误状态
             console.log(`WebSocket 连接失败，正在进行第 ${connectionAttemptsRef.current} 次重试...`);
         }
     }, []);
@@ -288,9 +266,7 @@ const ChatInterface = ({
         }
     }, []);
 
-
-
-    // 初始化 WebSocket 连接
+    // 初始化 WebSocket
     useEffect(() => {
         if (!chatId) return;
 
@@ -306,8 +282,31 @@ const ChatInterface = ({
         return () => {
             wsManager.disconnect();
         };
-    }, [chatId, handleWebSocketMessage, handleWebSocketError]);
+    }, [chatId, handleWebSocketMessage, handleWebSocketError, handleConnectionChange]);
 
+    // 加载历史记录
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!chatId) return;
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const history = await echoChatHistoryApi.fetchChatHistory(chatId);
+                if (history && history.length > 0) {
+                    setMessages(history);
+                }
+            } catch (err) {
+                setError(err.message);
+                console.error('Failed to fetch chat history:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [chatId]);
 
     if (error) {
         return (
@@ -325,55 +324,6 @@ const ChatInterface = ({
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
                         重试连接
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-
-    // 加载历史记录时的状态处理
-    useEffect(() => {
-        const fetchHistory = async () => {
-            if (!chatId) return;
-
-            setIsLoading(true);
-            setError(null);
-
-            try {
-                console.log("chatId:"+JSON.stringify(chatId))
-                const history = await echoChatHistoryApi.fetchChatHistory(chatId);
-                if (history && history.length > 0) {
-                    setMessages(history);
-                    // 如果有历史记录且当前是初始状态，则切换到聊天状态
-                    // if (currentState === 'initial') {
-                    //     updateCurrentState('chat');
-                    // }
-                }
-            } catch (err) {
-                setError(err.message);
-                console.error('Failed to fetch chat history:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchHistory();
-    }, [chatId, currentState, updateCurrentState]);
-
-
-
-
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="text-center space-y-4">
-                    <p className="text-red-600">加载历史记录失败: {error}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        重试
                     </button>
                 </div>
             </div>
@@ -407,19 +357,14 @@ const ChatInterface = ({
                     isLoading={isLoading}
                     onReturnToInitial={handleReturnToInitial}
                     onGenUIAction={(action, accepted) => {
-                        // 处理 action
                         if (accepted) {
-                            // 处理接受操作
                             const todos = JSON.parse(action.data.message).todos;
                             if (action.data.type === 'add') {
-                                // 处理添加待办
                                 console.log('Adding todo:', todos[0]);
                             } else if (action.data.type === 'send') {
-                                // 处理催办
                                 console.log('Sending reminder:', todos[0]);
                             }
                         }
-                        // 清除当前 action
                         setCurrentAction(undefined);
                     }}
                 />
@@ -428,7 +373,7 @@ const ChatInterface = ({
             <div className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
                 currentState === 'panel' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}>
-                <div className="h-full w-full overflow-hidden">  {/* 添加这个容器 */}
+                <div className="h-full w-full overflow-hidden">
                     <ProjectPanel
                         onClose={handlePanelToggle}
                         onSendMessage={handleSendMessage}

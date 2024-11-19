@@ -72,6 +72,7 @@ const ChatState: React.FC<{
     useEffect(() => {
         if (messages.length > visibleMessages.length) {
             setTimeout(() => {
+                console.log('messages to visibleMessage', messages);
                 setVisibleMessages(messages);
             }, 100);
         }

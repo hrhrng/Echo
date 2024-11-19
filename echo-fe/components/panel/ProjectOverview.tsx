@@ -211,7 +211,7 @@ const ProjectOverview = ({ onQuoteClick, onToggleStar }) => {
         <div className="grid grid-cols-3 gap-4">
             {[
                 { icon: Clock, label: '项目时长', value: stats.duration },
-                { icon: MessageSquare, label: '消息数量', value: stats.messageCount },
+                { icon: MessageSquare, label: '有效消息数量', value: stats.messageCount },
                 { icon: CheckCircle, label: '已解决问题', value: stats.solvedCount },
             ].map((item, index) => (
                 <div key={index} className="bg-white p-4 rounded-lg border border-gray-100">
