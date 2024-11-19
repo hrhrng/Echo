@@ -10,26 +10,29 @@ interface Todo {
     todoName: string;
     todoDesc: string;
     qtalkId: string;
-    quotes: number[];  // 新增的 quotes 字段
+    quotes: number[];
 }
 
 interface TodoCardProps {
     onQuoteClick: (index: number) => void;
+    refreshInterval?: number;
 }
 
-const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
+const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick, refreshInterval = 2000}) => {
     const [todos, setTodos] = useState<Todo[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isRemindDialogOpen, setIsRemindDialogOpen] = useState(false);
     const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
 
-    useEffect(() => {
-        fetchTodos();
-    }, []);
+    const fetchTodos = async (isInitial = false) => {
+        if (isInitial) {
+            setIsInitialLoading(true);
+        } else {
+            setIsRefreshing(true);
+        }
 
-    const fetchTodos = async () => {
-        setIsLoading(true);
         try {
             const result = await todoApi.getTodos();
             setTodos(result);
@@ -38,9 +41,19 @@ const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
             setError('Failed to fetch todos');
             console.error('Error fetching todos:', err);
         } finally {
-            setIsLoading(false);
+            if (isInitial) {
+                setIsInitialLoading(false);
+            } else {
+                setIsRefreshing(false);
+            }
         }
     };
+
+    useEffect(() => {
+        fetchTodos(true);
+        const intervalId = setInterval(() => fetchTodos(false), refreshInterval);
+        return () => clearInterval(intervalId);
+    }, [refreshInterval]);
 
     const handleSendRemind = (message: string, feedback?: string) => {
         console.log('发送催办消息:', message, feedback);
@@ -52,7 +65,7 @@ const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
         setIsRemindDialogOpen(true);
     };
 
-    if (isLoading) {
+    if (isInitialLoading) {
         return (
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                 <div className="animate-pulse">
@@ -87,7 +100,6 @@ const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                         <h4 className="font-medium text-gray-900">{todo.todoName}</h4>
-                                        {/* 使用后端返回的 quotes */}
                                         <div className="flex flex-wrap gap-1">
                                             {todo.quotes.map((index) => (
                                                 <button
@@ -97,7 +109,7 @@ const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
                                                         onQuoteClick(index);
                                                     }}
                                                     className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-gray-500 hover:text-blue-600
-                    bg-gray-50 hover:bg-blue-50 rounded-md transition-colors group"
+                                                    bg-gray-50 hover:bg-blue-50 rounded-md transition-colors group"
                                                 >
                                                     <Quote className="w-3 h-3 opacity-50 group-hover:opacity-100"/>
                                                     <span>{index}</span>
@@ -128,13 +140,13 @@ const TodoCard: React.FC<TodoCardProps> = ({onQuoteClick}) => {
                     open={isRemindDialogOpen}
                     onOpenChange={setIsRemindDialogOpen}
                     todo={{
+                        todoId: selectedTodo.todoId,
                         title: selectedTodo.todoName,
                         detail: selectedTodo.todoDesc,
                         assignee: selectedTodo.qtalkId
                     }}
                     onSend={handleSendRemind}
-                    onRegenerate={() => {
-                    }}
+                    onRegenerate={() => {}}
                 />
             )}
         </>

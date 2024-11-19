@@ -108,6 +108,7 @@ export type TipGenStreamReq = {
     before?: string;
     userInstruction?: string;
     event: string;
+    todoId: string;
 }
 
 export type StreamResponse = {
@@ -150,6 +151,7 @@ export const reminderApi = {
             event: params.event,
             before: params.before,
             userInstruction: params.userInstruction,
+            todoId: params.todoId || '',
         };
 
         const response = await fetchWithConfig('/qunarMarketAgent/tipGen', {
@@ -216,6 +218,12 @@ export const todoApi = {
     // Get all todos
     async getTodos() {
         return await fetchWithConfig(`/todo/get`, {
+            method: 'GET',
+        });
+    },
+
+    async getUrge() {
+        return await fetchWithConfig(`/todo/getUrge`, {
             method: 'GET',
         });
     }

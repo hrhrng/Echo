@@ -21,6 +21,7 @@ import MessageInput from "@/components/MessageInput";
 import TodoCard from "@/components/panel/TodoCard";
 import ProjectOverview from "@/components/panel/ProjectOverview";
 import {cn} from "@/lib/utils";
+import RemindCard from "@/components/panel/RemindCard";
 
 // 引用标签组件
 const QuoteTag = ({ quotes, onQuoteClick }: { quotes: number[]; onQuoteClick: (index: number) => void }) => (
@@ -45,18 +46,18 @@ const QuoteTag = ({ quotes, onQuoteClick }: { quotes: number[]; onQuoteClick: (i
 
 
 // 子组件：催办状态卡片
-const RemindCard = ({ remind, quotes, onQuoteClick }) => (
-    <div className="bg-white p-4 rounded-lg border border-gray-100">
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${remind.resolved ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                <span className="text-gray-900">{remind.content}</span>
-            </div>
-            <QuoteTag quotes={quotes} onQuoteClick={onQuoteClick} />
-        </div>
-        <div className="mt-2 text-sm text-gray-500">{remind.date}</div>
-    </div>
-);
+// const RemindCard = ({ remind, quotes, onQuoteClick }) => (
+//     <div className="bg-white p-4 rounded-lg border border-gray-100">
+//         <div className="flex items-center justify-between">
+//             <div className="flex items-center gap-3">
+//                 <div className={`w-2 h-2 rounded-full ${remind.resolved ? 'bg-green-500' : 'bg-yellow-500'}`} />
+//                 <span className="text-gray-900">{remind.content}</span>
+//             </div>
+//             <QuoteTag quotes={quotes} onQuoteClick={onQuoteClick} />
+//         </div>
+//         <div className="mt-2 text-sm text-gray-500">{remind.date}</div>
+//     </div>
+// );
 
 // 子组件：已完成事项及结论卡片
 const CompletedItemCard = ({ item, itemQuotes, conclusionQuotes, onQuoteClick }) => {
@@ -315,21 +316,6 @@ const ProjectPanel = ({ onClose, onSendMessage, onQuoteClick }) => {
                                             </h4>
                                             <div className="space-y-3">
                                                 <RemindCard
-                                                    remind={{
-                                                        content: "项目文档更新",
-                                                        date: "2024-03-15",
-                                                        resolved: true
-                                                    }}
-                                                    quotes={[5]}
-                                                    onQuoteClick={onQuoteClick}
-                                                />
-                                                <RemindCard
-                                                    remind={{
-                                                        content: "代码审查反馈",
-                                                        date: "2024-03-16",
-                                                        resolved: false
-                                                    }}
-                                                    quotes={[6]}
                                                     onQuoteClick={onQuoteClick}
                                                 />
                                             </div>

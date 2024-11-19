@@ -41,6 +41,7 @@ const ChatList = ({ groupId }) => {
 
             try {
                 setState(prev => ({ ...prev, loading: true, error: null }));
+                console.log(process.env.NEXT_PUBLIC_API_BASE_URL)
                 const data = await qtChatHistoryApi.fetchChatHistory(groupId);
                 if (mounted) {
                     setState(prev => ({

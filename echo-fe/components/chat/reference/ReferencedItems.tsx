@@ -17,12 +17,8 @@ interface ReferencedItemsProps {
 
 // 推荐问题列表
 const suggestions = [
-    "这个项目的后端开发是谁？",
-    "目前项目进度如何？",
-    "有哪些待解决的关键问题？",
-    "下一步开发计划是什么？",
-    "团队成员的分工情况如何？",
-    "项目的主要里程碑有哪些？",
+    "关于后端联调，帮我查询还有什么待办事项",
+    "关于上次提到的支付中心接口的问题，还有哪些事项长时间没有得到响应，需要催一催",
 ];
 
 export const ReferencedItems: React.FC<ReferencedItemsProps> = ({ onItemRemove, onSuggestionSelect }) => {

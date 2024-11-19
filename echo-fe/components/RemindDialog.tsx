@@ -32,6 +32,7 @@ const RemindDialog = ({ open, onOpenChange, todo, onSend }) => {
 
         try {
             const result = await reminderApi.generateReminder({
+                todoId: todo.todoId,
                 event: todo.title,
                 before: message,
                 userInstruction: feedback
